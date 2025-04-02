@@ -58,23 +58,19 @@ The Gradio interface will launch in your default web browser, allowing you to:
    - Retrieves current weather conditions for any location
    - Provides temperature in Celsius and weather description
 
-2. **Wikipedia Search** (`wiki_search`):
-   - Fetches concise summaries from Wikipedia articles
-   - Returns 3-sentence summaries for quick information
-
-3. **Now Playing Movies** (`get_now_playing_movies`):
+1. **Now Playing Movies** (`get_now_playing_movies`):
    - Lists currently playing movies in theaters
    - Includes movie titles, release dates, and overviews
 
-4. **Web Search** (`search_web`):
+1. **Web Search** (`search_web`):
    - Performs web searches using DuckDuckGo
    - Returns relevant search results
 
-5. **Hugging Face Hub Stats** (`get_hub_stats`):
+1. **Hugging Face Hub Stats** (`get_hub_stats`):
    - Retrieves statistics for Hugging Face model authors
    - Shows most downloaded model and download count
 
-6. **Guest Information** (`guest_info_retriever`):
+1. **Guest Information** (`guest_info_retriever`):
    - Retrieves detailed information about gala guests
    - Searches by name or relation using vector similarity
 
