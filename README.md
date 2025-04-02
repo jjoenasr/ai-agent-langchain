@@ -10,7 +10,7 @@ A powerful conversational AI agent built with LangChain, Google's Gemini LLM, an
   - Now playing movies in theaters
   - Web search using DuckDuckGo
   - Hugging Face Hub model statistics
-  - Guest information retrieval using semantic vector similarity
+  - Guest information retrieval using RAG
 - 📝 Real-time streaming responses
 - 🔍 Transparent tool usage display
 - 💾 Memory management for conversation context

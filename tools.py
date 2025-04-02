@@ -10,7 +10,7 @@ from huggingface_hub import list_models
 def get_weather(location: str) -> str:
     """Get the current weather for a given location"""
     api_key = os.getenv('OPEN_WEATHER_MAP')
-    url = "http://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}"
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}"
     try:
         response = requests.get(url)
         data = response.json()
