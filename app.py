@@ -4,7 +4,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from dotenv import load_dotenv
-from tools import get_weather, wiki_search, get_now_playing_movies, search_web
+from tools import get_weather, wiki_search, get_now_playing_movies, search_web, get_hub_stats
+from retriever import load_guest_dataset
 import gradio as gr
 import logging
 
@@ -15,7 +16,8 @@ load_dotenv()
 
 llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.4, streaming=True)
 memory = MemorySaver()
-tools = [get_weather, wiki_search, get_now_playing_movies, search_web]
+guest_tool = load_guest_dataset()
+tools = [get_weather, wiki_search, get_now_playing_movies, search_web, get_hub_stats, guest_tool]
 
 agent = create_react_agent(llm, tools, checkpointer=memory)
 config = {"configurable": {"thread_id": "my-langchain-agent"}}
@@ -37,9 +39,8 @@ async def chat(query: str, hist: list):
                             tool_args = tool_call.get('args', 'no args')
                             
                             # Format the tool call and arguments
-                            tool_call_info = f"Invoking {tool_name} with {tool_args}"
                             hist.append(gr.ChatMessage(role="assistant",
-                                                    content=tool_call_info,
+                                                    content=f"Invoking {tool_name} with {tool_args}",
                                                     metadata={"title": f"🛠️ Used tool {tool_name}"}))
                             yield "", hist
                     else:
