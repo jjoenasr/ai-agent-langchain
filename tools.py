@@ -2,7 +2,6 @@ import requests
 import os
 import json
 from langchain_core.tools import tool
-import wikipedia
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_community.tools import DuckDuckGoSearchRun
 from huggingface_hub import list_models
@@ -23,14 +22,6 @@ def get_weather(location: str) -> str:
     except Exception as e:
         return f"Sorry, I couldn't get the weather information at the moment. Error: {e}"
 
-
-@tool
-def wiki_search(query: str) -> str:
-    """Searches Wikipedia and returns a summary"""
-    try:
-        return wikipedia.summary(query, sentences=3)
-    except:
-        return "Could not find Wikipedia article"
 
 @tool
 def get_now_playing_movies() -> str:
@@ -85,5 +76,3 @@ def get_hub_stats(author: str) -> str:
     except Exception as e:
         return f"Error fetching models for {author}: {str(e)}"
 
-#print(get_weather.invoke("London"))
-#print(wiki_search.invoke("Viola Davis"))

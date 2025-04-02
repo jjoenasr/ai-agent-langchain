@@ -1,15 +1,16 @@
 # LangChain Agent with Gradio Interface
 
-A powerful conversational AI agent built with LangChain, Google's Gemini LLM, and Gradio interface. The agent can perform multiple tasks including weather checks, Wikipedia searches, movie information retrieval, and web searches.
+A powerful conversational AI agent built with LangChain, Google's Gemini LLM, and Gradio interface. The agent can perform multiple tasks including weather checks, movie information retrieval, web searches, and more.
 
 ## Features
 
 - 🤖 Interactive chat interface using Gradio
 - 🛠️ Multiple tool integration:
   - Weather information retrieval
-  - Wikipedia article summaries
   - Now playing movies in theaters
-  - Web search capabilities
+  - Web search using DuckDuckGo
+  - Hugging Face Hub model statistics
+  - Guest information retrieval using semantic vector similarity
 - 📝 Real-time streaming responses
 - 🔍 Transparent tool usage display
 - 💾 Memory management for conversation context
@@ -66,13 +67,22 @@ The Gradio interface will launch in your default web browser, allowing you to:
    - Includes movie titles, release dates, and overviews
 
 4. **Web Search** (`search_web`):
-   - Performs web searches using Tavily
+   - Performs web searches using DuckDuckGo
    - Returns relevant search results
+
+5. **Hugging Face Hub Stats** (`get_hub_stats`):
+   - Retrieves statistics for Hugging Face model authors
+   - Shows most downloaded model and download count
+
+6. **Guest Information** (`guest_info_retriever`):
+   - Retrieves detailed information about gala guests
+   - Searches by name or relation using vector similarity
 
 ## Project Structure
 
 - `app.py`: Main application file with Gradio interface and agent setup
-- `tools.py`: Contains all tool implementations
+- `tools.py`: Contains tool implementations for weather, movies, web search, and hub stats
+- `retriever.py`: Handles guest information vector storage and retrieval
 - `.env`: Environment variables and API keys
 
 ## Contributing
