@@ -5,41 +5,37 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.docstore.in_memory import InMemoryDocstore
 # from langchain_community.retrievers import BM25Retriever
 from langchain.tools import Tool
+from langchain_core.tools import tool
 import faiss
 import os
 
 FAISS_PATH = "faiss_vector_store"
-embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
 
-if os.path.exists(FAISS_PATH):
-    vector_store = FAISS.load_local(FAISS_PATH, embeddings, allow_dangerous_deserialization=True)
-else:
-    index = faiss.IndexHNSWFlat(768, 10) # (emb_size, n_neighbors)
-    vector_store = FAISS(embedding_function=embeddings,
-                        index=index, # where to store the vectors
-                        docstore=InMemoryDocstore(), # where to store documents metadata
-                        index_to_docstore_id={} # how to map index to docstore
-                        )
+class RAGManager:
+    def __init__(self):
+        self.embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+        self.vector_store = None
+        self.load_vector_store()
 
-def extract_text(query: str) -> str:
-    """Retrieves detailed information about gala guests based on their name or relation."""
-    global vector_store
-    results = vector_store.similarity_search(query, k=1)
-    if results:
-        return "\n\n".join([doc.page_content for doc in results])
-    else:
-        return "No matching guest information found."
+    def load_vector_store(self, faiss_path=FAISS_PATH):
+        """Loads the vector store from disk if it exists, otherwise creates a new one."""
+        if os.path.exists(faiss_path):
+            try:
+                self.vector_store = FAISS.load_local(faiss_path, self.embeddings, allow_dangerous_deserialization=True)
+            except Exception as e:
+                self.vector_store = None
+        else:
+            index = faiss.IndexHNSWFlat(768, 10)  # (emb_size, n_neighbors)
+            self.vector_store = FAISS(embedding_function=self.embeddings,
+                                      index=index,  # where to store the vectors
+                                      docstore=InMemoryDocstore(),  # where to store documents metadata
+                                      index_to_docstore_id={}  # how to map index to docstore
+                                      )
+            self.ingest_guest_dataset()
 
-guest_info_tool = Tool(
-    name="guest_info_retriever",
-    func=extract_text,
-    description="Retrieves detailed information about gala guests based on their name or relation."
-)
-
-def load_guest_dataset() -> Tool:
-    if not os.path.exists(FAISS_PATH):
+    def ingest_guest_dataset(self, faiss_path=FAISS_PATH):
+        """Load the dataset and add the documents to the vector store."""
         guest_dataset = datasets.load_dataset("agents-course/unit3-invitees", split="train")
-        # Convert dataset entries into Document objects
         docs = [
             Document(
                 page_content="\n".join([
@@ -52,13 +48,24 @@ def load_guest_dataset() -> Tool:
             )
             for guest in guest_dataset
         ]
-        global vector_store
-        vector_store.add_documents(documents=docs)
-        vector_store.save_local(FAISS_PATH)
-    return guest_info_tool
+        self.vector_store.add_documents(documents=docs)
+        self.vector_store.save_local(faiss_path)
 
-# guest_info_tool = load_guest_dataset()
-# print(guest_info_tool.invoke('Who is Marie Curie?'))
+    def retrieve_guests(self, query: str) -> str:
+        """Retrieves detailed information about gala guests based on their name or relation."""
+        results = self.vector_store.similarity_search(query, k=1)
+        if results:
+            return "\n\n".join([doc.page_content for doc in results])
+        else:
+            return "No matching guest information found."
 
+
+# Initialize the RAG manager
+vector_store_manager = RAGManager()
+
+@tool
+def guest_info_tool(query: str) -> str:
+    """Retrieves detailed information about gala guests based on their name or relation."""
+    return vector_store_manager.retrieve_guests(query)
 
 

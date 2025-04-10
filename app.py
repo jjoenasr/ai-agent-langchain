@@ -6,7 +6,7 @@ from langgraph.checkpoint.mongodb import AsyncMongoDBSaver
 from langgraph.prebuilt import create_react_agent
 from dotenv import load_dotenv
 from tools import get_weather, get_now_playing_movies, search_web, get_hub_stats
-from retriever import load_guest_dataset
+from retriever import guest_info_tool
 from pymongo import AsyncMongoClient
 import gradio as gr
 import logging
@@ -34,6 +34,8 @@ async def setup_persistence():
         if not host:
             raise ValueError("MONGODB_URI environment variable not set")
         mongodb_client = AsyncMongoClient(host)
+        await mongodb_client.server_info()  # Check if the connection is successful
+        logger.info("Connected to MongoDB successfully")
         checkpointer = AsyncMongoDBSaver(mongodb_client)
     except Exception as e:
         logger.error(f"Error connecting to MongoDB: {e}")
@@ -55,8 +57,7 @@ def pre_model_hook(state):
 async def main():
     # Initialize agent and tools
     llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.2, streaming=True)
-    guest_tool = load_guest_dataset()
-    tools = [get_weather, get_now_playing_movies, search_web, get_hub_stats, guest_tool]
+    tools = [get_weather, get_now_playing_movies, search_web, get_hub_stats, guest_info_tool]
     checkpointer = await setup_persistence()
     agent = create_react_agent(llm, tools, checkpointer=checkpointer, pre_model_hook=pre_model_hook)
     config = {"configurable": {"user_id": "user-xxx", "thread_id": "my-langchain-agent"}}
