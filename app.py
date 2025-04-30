@@ -19,9 +19,16 @@ async def main():
                             type="messages",
                             placeholder="What can i help you with?",
                             show_copy_button=True)
-        msg = gr.Textbox(placeholder="Enter a message", show_label=False, submit_btn=True)
+    
+        with gr.Row():
+            msg = gr.Textbox(placeholder="Enter a message",
+                            show_label=False,
+                            submit_btn=True,
+                            scale=4)
+            file = gr.UploadButton(file_types=[".txt", ".csv", ".md", ".json", ".py", ".xlsx", ".png", ".jpg", ".mp3"], scale=1)
+            send_btn = gr.Button("Send", scale=1)
         clear = gr.ClearButton([msg, chatbot])
-        msg.submit(agent.stream_answer, [msg, chatbot], [msg, chatbot])
+        msg.submit(agent.stream_answer, [msg, file, chatbot], [msg, file, chatbot])
 
     demo.launch()
 

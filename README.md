@@ -5,15 +5,19 @@ A powerful conversational AI agent built with LangChain, Google's Gemini LLM, an
 ## Features
 
 - 🤖 Interactive chat interface using Gradio
-- 🛠️ Multiple tool integration:
+- 🛠️ Comprehensive tool integration:
+  - Web search and webpage analysis
+  - Academic paper search via ArXiv
   - Weather information retrieval
-  - Now playing movies in theaters
-  - Web search using DuckDuckGo
-  - Hugging Face Hub model statistics
-  - Guest information retrieval using RAG
+  - Movie information from TMDB
+  - Wikipedia search
+  - Calculator functions
+  - File analysis and content extraction
+  - Multimodal analysis (images, audio)
+  - YouTube video analysis
 - 📝 Real-time streaming responses
 - 🔍 Transparent tool usage display
-- 💾 Memory management for conversation context
+- 💾 Memory management with RAG support
 
 ## Prerequisites
 
@@ -21,7 +25,6 @@ Make sure you have Python installed and the following API keys:
 - Google API key (for Gemini LLM)
 - OpenWeatherMap API key
 - TMDB API key (for movie information)
-- Tavily API key (for web searches)
 
 ## Installation
 
@@ -36,7 +39,7 @@ pip install requirements.txt
 GOOGLE_API_KEY=your_google_api_key
 OPEN_WEATHER_MAP=your_openweathermap_key
 TMDB_API_KEY=your_tmdb_key
-TAVILY_API_KEY=your_tavily_key
+LANGSMITH_API_KEY=your_langsmith_api_key
 ```
 
 ## Usage
@@ -54,31 +57,59 @@ The Gradio interface will launch in your default web browser, allowing you to:
 
 ## Tools Available
 
+1. **Web Page Analysis** (`visit_web_page`):
+   - Visits and analyzes webpage content
+   - RAG-optimized content processing
+
+1. **Web Search** (`web_search`):
+   - DuckDuckGo-powered web search
+   - Returns formatted markdown results
+
+1. **Academic Search** (`academic_search`):
+   - ArXiv paper search integration
+   - Academic research discovery
+
 1. **Weather Information** (`get_weather`):
-   - Retrieves current weather conditions for any location
-   - Provides temperature in Celsius and weather description
+   - Current weather conditions
+   - Weather description
 
-1. **Now Playing Movies** (`get_now_playing_movies`):
-   - Lists currently playing movies in theaters
-   - Includes movie titles, release dates, and overviews
+1. **Movie Information** (`get_now_playing_movies`):
+   - Currently playing movies
+   - TMDB API integration
 
-1. **Web Search** (`search_web`):
-   - Performs web searches using DuckDuckGo
-   - Returns relevant search results
+1. **Wikipedia Search** (`wiki_search`):
+   - Wikipedia article summaries
+   - Direct article links
 
-1. **Hugging Face Hub Stats** (`get_hub_stats`):
-   - Retrieves statistics for Hugging Face model authors
-   - Shows most downloaded model and download count
+1. **Calculator** (`calculator`):
+   - Basic arithmetic operations
+   - Supports +, -, *, /, %, ** and ()
 
-1. **Guest Information** (`guest_info_retriever`):
-   - Retrieves detailed information about gala guests
-   - Searches by name or relation using vector similarity
+1. **Text Analysis** (`text_analysis`):
+   - Supports multiple file formats:
+     - .txt, .md (plain text)
+     - .csv (with statistics)
+     - .json (formatted output)
+     - .py (source code)
+     - .xlsx (spreadsheet data)
+
+1. **Multimodal Analysis** (`multimodal_analysis`):
+   - Image analysis (.png, .jpg)
+   - Audio processing (.mp3)
+   - Gemini-powered insights
+
+1. **YouTube Analysis** (`youtube_analysis`):
+    - YouTube video analysis
+    - Content understanding
+    - Gemini multimodal processing
 
 ## Project Structure
 
 - `app.py`: Main application file with Gradio interface and agent setup
-- `tools.py`: Contains tool implementations for weather, movies, web search, and hub stats
-- `retriever.py`: Handles guest information vector storage and retrieval
+- `agent.py`: Agent implementation
+- `tools.py`: Tool implementations
+- `retriever.py`: RAG Manager implementation
+- `logger_config.py`: # Logging configuration
 - `.env`: Environment variables and API keys
 
 ## Contributing

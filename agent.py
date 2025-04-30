@@ -6,8 +6,11 @@ from langgraph.checkpoint.mongodb import AsyncMongoDBSaver
 from pymongo import AsyncMongoClient
 from langgraph.prebuilt import create_react_agent
 from tools import web_search, visit_web_page, wiki_search, academic_search, calculator, text_analysis, multimodal_analysis, youtube_analysis
-from typing import AsyncGenerator, Literal
+from typing import AsyncGenerator, Optional
 from logger_config import logger
+import shutil
+import tempfile
+from uuid import uuid4
 import gradio as gr
 
 # Persistence layer
@@ -53,7 +56,7 @@ class ReActAgent:
         self.checkpointer = await setup_persistence()
         self.agent = create_react_agent(self.llm, self.tools, checkpointer=self.checkpointer, pre_model_hook=pre_model_hook)
     
-    def download_file(self, uploaded_file) -> str:
+    def download_file(self, uploaded_file: tempfile._TemporaryFileWrapper) -> str:
         """Process uploaded file from Gradio interface and save it locally"""
         file_path = os.path.join("temp", uploaded_file.name)
 
@@ -65,32 +68,30 @@ class ReActAgent:
             # Save the uploaded file locally
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'wb') as f:
-                f.write(uploaded_file.read())  # Write the content of the uploaded file to disk
+                # Use shutil.copyfileobj to copy the file content to the destination
+                shutil.copyfileobj(uploaded_file, f)
             logger.info(f"File uploaded and saved to {file_path}")
         except Exception as e:
             logger.error(f"Error saving uploaded file: {e}")
         
         return file_path
 
-    
-    async def answer(self, question: str) -> str:
-        if not question.strip():
-            return "You can't send an empty message"
-        logger.info(f"Agent received question (first 50 chars): {question[:50]}...")
-        llm_output: AIMessage = self.agent.invoke({"messages": [HumanMessage(content=question)]}, config=self.config)['messages'][-1]
-        logger.info(f"Agent answers: {llm_output.content}")
-        return llm_output
-
-
-    async def stream_answer(self, query: str, hist: list) -> AsyncGenerator[tuple[str, list] , None]:
+    async def stream_answer(self, query: str, file: Optional[tempfile._TemporaryFileWrapper], hist: list) -> AsyncGenerator[tuple[str, Optional[tempfile._TemporaryFileWrapper], list],  None]:
         try:
             if not query.strip():
                 hist.append(gr.ChatMessage(role="assistant", content="you can't send an empty message"))
-                yield "", hist
+                yield "", None, hist
             else:
                 hist.append(gr.ChatMessage(role="user", content=query))
+                hist.append(gr.ChatMessage(role="user", content=file))
                 logger.info(f"User Message: {query}")
-                yield "", hist
+                if file is not None:
+                    hist.append(gr.ChatMessage(role="user", content=file))
+                    file_path = self.download_file(file)
+                    if file_path:
+                        logger.info(f"Downloaded user file at: {file_path}")
+                        query += f"\nThe file is attached and available at filepath: {file_path}"
+                yield "", None,  hist
                 buffer = ""
                 async for chunk, _ in self.agent.astream({"messages": [HumanMessage(content=query)]}, config=self.config, stream_mode="messages"):
                     if isinstance(chunk, AIMessageChunk):
@@ -104,14 +105,23 @@ class ReActAgent:
                                 hist.append(gr.ChatMessage(role="assistant",
                                                         content=f"Invoking {tool_name} with {tool_args}",
                                                         metadata={"title": f"🛠️ Used tool {tool_name}"}))
-                                yield "", hist
+                                yield "", None, hist
                         else:
                             buffer += chunk.content
                             msg = gr.ChatMessage(role="assistant", content=buffer)
-                            yield "", hist + [msg]
+                            yield "", None, hist + [msg]
                 hist.append(gr.ChatMessage(role="assistant", content=buffer))
                 logger.info(f"AI response from assistant: {buffer[:50]}...")
-                yield "", hist
+                yield "", None, hist
         except Exception as e:
             logger.error(f"Error in chat function: {e}")
-            yield "", hist
+            yield "", None, hist
+            return
+    
+    async def answer(self, question: str) -> str:
+        if not question.strip():
+            return "You can't send an empty message"
+        logger.info(f"Agent received question (first 50 chars): {question[:50]}...")
+        llm_output: AIMessage = self.agent.invoke({"messages": [HumanMessage(content=question)]}, config=self.config)['messages'][-1]
+        logger.info(f"Agent answers: {llm_output.content}")
+        return llm_output
