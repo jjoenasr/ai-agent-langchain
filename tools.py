@@ -9,6 +9,7 @@ import wikipedia
 import requests
 from google import genai
 from google.genai import types, client
+from typing import Annotated
 import pandas as pd
 import os
 import json
@@ -67,7 +68,7 @@ def academic_search(query: str) -> str:
         return f"Error searching the web: {str(e)}"
 
 @tool
-def get_weather(location: str) -> str:
+def get_weather(location: Annotated[str, "City Name"]) -> str:
     """Get the current weather for a given location"""
     api_key = os.getenv('OPEN_WEATHER_MAP')
     url = f"http://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}"
@@ -185,7 +186,7 @@ def text_analysis(filepath: str) -> str:
         return f"Error reading file {filepath}: {str(e)}"    
 
 @tool
-def multimodal_analysis(filepath: str, prompt=str) -> str:
+def multimodal_analysis(filepath: str, prompt: str) -> str:
     """
     Send a prompt and a file (image, audio or video) to LLM for multimodal analysis
     Supported file types to analyze: .png, .jpg, .mp3
@@ -216,10 +217,11 @@ def multimodal_analysis(filepath: str, prompt=str) -> str:
         )
         return response.text
     except Exception as e:
+        logger.error(f"Error reading file {filepath}: {str(e)}")
         return f"Error reading file {filepath}: {str(e)}"
 
 @tool
-def youtube_analysis(url: Annotated[str, "Youtube URL"], prompt=str) -> str:
+def youtube_analysis(url: Annotated[str, "Youtube URL"], prompt: str) -> str:
     """
     Send a youtube url and a prompt to LLM for multimodal processing
     """
@@ -237,5 +239,6 @@ def youtube_analysis(url: Annotated[str, "Youtube URL"], prompt=str) -> str:
         )
         return response.text
     except Exception as e:
+        logger.error(f"Error reading ytb video: {str(e)}")
         return f"Error reading ytb video: {str(e)}"
 

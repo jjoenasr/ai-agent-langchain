@@ -8,28 +8,27 @@ import asyncio
 load_dotenv()
 
 async def main():
+    print("\n" + "-"*30 + " App Starting " + "-"*30)
     # Initialize agent and tools
     agent = ReActAgent()
     await agent.initialize_agent()
+    print("-"*(60 + len(" App Starting ")) + "\n")
 
-    # Gradio UI
+    # Gradio UI    
     with gr.Blocks() as demo:
         gr.Markdown("# Chat with your agent and see its thoughts")
         chatbot = gr.Chatbot(label="AI Assistant",
                             type="messages",
                             placeholder="What can i help you with?",
                             show_copy_button=True)
+        msg = gr.MultimodalTextbox(placeholder="Ask anything",
+                                   file_types=[".txt", ".csv", ".md", ".json", ".py", ".xlsx", ".png", ".jpg", ".mp3"],
+                                   show_label=False,
+                                   submit_btn=True)
     
-        with gr.Row():
-            msg = gr.Textbox(placeholder="Enter a message",
-                            show_label=False,
-                            submit_btn=True,
-                            scale=4)
-            file = gr.UploadButton(file_types=[".txt", ".csv", ".md", ".json", ".py", ".xlsx", ".png", ".jpg", ".mp3"], scale=1)
-            send_btn = gr.Button("Send", scale=1)
         clear = gr.ClearButton([msg, chatbot])
-        msg.submit(agent.stream_answer, [msg, file, chatbot], [msg, file, chatbot])
-
+        msg.submit(agent.stream_answer, [msg, chatbot], [msg, chatbot])
+    logger.info("Launching Gradio Interface for Basic Agent Evaluation...")
     demo.launch()
 
 

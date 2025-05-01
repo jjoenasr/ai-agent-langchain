@@ -17,6 +17,7 @@ datasets==2.18.0
 dill==0.3.8
 dnspython==2.7.0
 duckduckgo_search==2025.4.4
+et_xmlfile==2.0.0
 faiss-cpu==1.10.0
 fastapi==0.115.12
 feedparser==6.0.11
@@ -66,6 +67,7 @@ multidict==6.3.2
 multiprocess==0.70.16
 mypy-extensions==1.0.0
 numpy==2.2.4
+openpyxl==3.1.5
 orjson==3.10.16
 ormsgpack==1.9.1
 packaging==24.2

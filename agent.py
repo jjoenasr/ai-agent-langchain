@@ -5,12 +5,12 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.mongodb import AsyncMongoDBSaver
 from pymongo import AsyncMongoClient
 from langgraph.prebuilt import create_react_agent
-from tools import web_search, visit_web_page, wiki_search, academic_search, calculator, text_analysis, multimodal_analysis, youtube_analysis
-from typing import AsyncGenerator, Optional
+from tools import web_search, visit_web_page, wiki_search, academic_search, calculator, get_weather, get_now_playing_movies, text_analysis, multimodal_analysis, youtube_analysis
+from typing import AsyncGenerator
 from logger_config import logger
 import shutil
-import tempfile
-from uuid import uuid4
+from models import MultimodalMessage, FileData
+from pathlib import Path
 import gradio as gr
 
 # Persistence layer
@@ -48,50 +48,53 @@ class ReActAgent:
             raise ValueError("Missing Google API Key")
         self.config = {"configurable": {"user_id": user_id, "thread_id": thread_id}}
         self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
-        self.tools = [web_search, visit_web_page, wiki_search, academic_search, calculator]
+        self.tools = [web_search, visit_web_page, wiki_search, academic_search, calculator, get_weather, get_now_playing_movies, text_analysis, multimodal_analysis, youtube_analysis]
         self.checkpointer = None
         self.agent = None
     
     async def initialize_agent(self):
-        self.checkpointer = await setup_persistence()
+        self.checkpointer = MemorySaver() # await setup_persistence()
         self.agent = create_react_agent(self.llm, self.tools, checkpointer=self.checkpointer, pre_model_hook=pre_model_hook)
     
-    def download_file(self, uploaded_file: tempfile._TemporaryFileWrapper) -> str:
+    def download_file(self, uploaded_file: FileData | str) -> str:
         """Process uploaded file from Gradio interface and save it locally"""
-        file_path = os.path.join("temp", uploaded_file.name)
-
-        # Check if file already exists
-        if os.path.exists(file_path):
-            return file_path
-        
         try:
-            # Save the uploaded file locally
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, 'wb') as f:
-                # Use shutil.copyfileobj to copy the file content to the destination
-                shutil.copyfileobj(uploaded_file, f)
+            os.makedirs("temp", exist_ok=True)
+            if isinstance(uploaded_file, str):
+                file_path= f"temp/{Path(uploaded_file).name}"
+                if os.path.exists(file_path):
+                    return file_path
+                shutil.copy(uploaded_file, file_path)
+            else:
+                file_path = f"temp/{uploaded_file.orig_name}"
+                if os.path.exists(file_path):
+                    return file_path
+                # Save the uploaded file locally
+                shutil.copy(uploaded_file.path, file_path)
             logger.info(f"File uploaded and saved to {file_path}")
         except Exception as e:
             logger.error(f"Error saving uploaded file: {e}")
         
         return file_path
 
-    async def stream_answer(self, query: str, file: Optional[tempfile._TemporaryFileWrapper], hist: list) -> AsyncGenerator[tuple[str, Optional[tempfile._TemporaryFileWrapper], list],  None]:
+    async def stream_answer(self, msg_dict: dict, hist: list) -> AsyncGenerator[tuple[dict, list],  None]:
         try:
+            msg = MultimodalMessage(**msg_dict)
+            query, files = msg.text, msg.files
             if not query.strip():
                 hist.append(gr.ChatMessage(role="assistant", content="you can't send an empty message"))
-                yield "", None, hist
+                yield MultimodalMessage().model_dump(), hist
             else:
                 hist.append(gr.ChatMessage(role="user", content=query))
-                hist.append(gr.ChatMessage(role="user", content=file))
                 logger.info(f"User Message: {query}")
-                if file is not None:
-                    hist.append(gr.ChatMessage(role="user", content=file))
-                    file_path = self.download_file(file)
-                    if file_path:
-                        logger.info(f"Downloaded user file at: {file_path}")
-                        query += f"\nThe file is attached and available at filepath: {file_path}"
-                yield "", None,  hist
+                if files:
+                    for file in files:
+                        hist.append(gr.ChatMessage(role="user", content=gr.File(file)))
+                        file_path = self.download_file(file)
+                        if file_path:
+                            logger.info(f"Downloaded user file at: {file_path}")
+                            query += f"\nThe file is attached and available at filepath: {file_path}"
+                yield MultimodalMessage().model_dump(),  hist
                 buffer = ""
                 async for chunk, _ in self.agent.astream({"messages": [HumanMessage(content=query)]}, config=self.config, stream_mode="messages"):
                     if isinstance(chunk, AIMessageChunk):
@@ -105,17 +108,17 @@ class ReActAgent:
                                 hist.append(gr.ChatMessage(role="assistant",
                                                         content=f"Invoking {tool_name} with {tool_args}",
                                                         metadata={"title": f"🛠️ Used tool {tool_name}"}))
-                                yield "", None, hist
+                                yield MultimodalMessage().model_dump(), hist
                         else:
                             buffer += chunk.content
                             msg = gr.ChatMessage(role="assistant", content=buffer)
-                            yield "", None, hist + [msg]
+                            yield MultimodalMessage().model_dump(), hist + [msg]
                 hist.append(gr.ChatMessage(role="assistant", content=buffer))
                 logger.info(f"AI response from assistant: {buffer[:50]}...")
-                yield "", None, hist
+                yield MultimodalMessage().model_dump(), hist
         except Exception as e:
             logger.error(f"Error in chat function: {e}")
-            yield "", None, hist
+            yield MultimodalMessage().model_dump(), hist + [gr.ChatMessage(role="assistant", content="Internal error. Try again later ")]
             return
     
     async def answer(self, question: str) -> str:
