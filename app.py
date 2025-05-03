@@ -10,14 +10,16 @@ load_dotenv()
 async def main():
     print("\n" + "-"*30 + " App Starting " + "-"*30)
     # Initialize agent and tools
-    agent = ReActAgent()
+    agent = ReActAgent(thread_id='my-langchain-agent')
     await agent.initialize_agent()
+    hist = await agent.load_prev_messages()
     print("-"*(60 + len(" App Starting ")) + "\n")
 
     # Gradio UI    
     with gr.Blocks() as demo:
         gr.Markdown("# Chat with your agent and see its thoughts")
-        chatbot = gr.Chatbot(label="AI Assistant",
+        chatbot = gr.Chatbot(hist,
+                            label="AI Assistant",
                             type="messages",
                             placeholder="What can i help you with?",
                             show_copy_button=True)

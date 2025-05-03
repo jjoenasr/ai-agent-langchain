@@ -56,6 +56,29 @@ class ReActAgent:
         self.checkpointer = MemorySaver() # await setup_persistence()
         self.agent = create_react_agent(self.llm, self.tools, checkpointer=self.checkpointer, pre_model_hook=pre_model_hook)
     
+    async def load_prev_messages(self) -> list:
+        """Load agent messages in gradio format"""
+        hist = []
+        try:
+            state = await self.agent.aget_state(self.config)
+            msgs = state.values.get('messages', [])
+            for msg in msgs:
+                if isinstance(msg, HumanMessage):
+                    hist.append(gr.ChatMessage(role='user', content=str(msg.content)))
+                elif isinstance(msg, AIMessage):
+                    if msg.tool_calls:
+                        for tool_call in msg.tool_calls:
+                            tool_name = tool_call.get('name', 'Unknown Tool')
+                            tool_args = tool_call.get('args', 'no args')
+                            hist.append(gr.ChatMessage(role='assistant',
+                                                    content=f"Invoking {tool_name} with {tool_args}",
+                                                    metadata={"title": f"🛠️ Used tool {tool_name}"}))
+                    else:
+                        hist.append(gr.ChatMessage(role='assistant', content=str(msg.content)))
+        except Exception as e:
+            logger.error(f"Error loading prev messages: {str(e)}")
+        return hist
+    
     def download_file(self, uploaded_file: FileData | str) -> str:
         """Process uploaded file from Gradio interface and save it locally"""
         try:
