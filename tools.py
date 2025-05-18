@@ -3,12 +3,12 @@ from duckduckgo_search import DDGS
 from typing import Annotated, Literal, Optional
 from langchain_community.tools import ArxivQueryRun
 from logger_config import logger
-from markdownify import markdownify
 from retriever import RAGManager
 import wikipedia
 import requests
+import duckdb
 from google import genai
-from google.genai import types, client
+from google.genai import types
 from typing import Annotated
 import pandas as pd
 import os
@@ -176,14 +176,48 @@ def text_analysis(filepath: str) -> str:
         elif ext == '.xlsx':
             # For Excel files, use pandas to read the sheet and return as a string
             df = pd.read_excel(filepath)
-            return df.to_string()
+            summary = f"""
+            Excel file loaded with {df.shape[0]} rows and {df.shape[1]} columns.
+            Columns: {', '.join(df.columns)}
+            Summary statistics:
+            {str(df.describe())}
+            """
+            return summary
 
         else:
-            return f"Unsupported file type: {ext}"
+            raise ValueError(f"Unsupported file type: {ext}")
 
     except Exception as e:
         logger.error(f"Text Analysis tool error: {e}")
-        return f"Error reading file {filepath}: {str(e)}"    
+        return f"Error reading file {filepath}: {str(e)}" 
+
+@tool
+def sql_file_analysis(filepath: str, query: Annotated[str, "SQL query"]) -> str:
+    """
+    Use this tool to run SQL queries on a CSV or Excel file using DuckDB.
+    Use 'df' as the table name.
+    Example: SELECT * FROM df WHERE column_name = 'value'
+    """
+    ext = os.path.splitext(filepath)[1].lower()
+    try:
+        if ext == '.csv':
+            df = pd.read_csv(filepath)
+        elif ext == '.xlsx':
+            df = pd.read_excel(filepath)
+        else:
+            raise ValueError(f"Unsupported file type: {ext}")
+        
+        # Validate query
+        if not query.strip().lower().startswith("select"):
+            raise ValueError("Only SELECT queries are supported.")
+        
+        # Run the query using DuckDB
+        result = duckdb.query_df(df, 'df', query).to_df()
+        return result.to_string()
+        
+    except Exception as e:
+        logger.error(f"SQL Analysis tool error: {e}")
+        return f"Error running SQL query on file {filepath}: {str(e)}"   
 
 @tool
 def multimodal_analysis(filepath: str, prompt: str) -> str:

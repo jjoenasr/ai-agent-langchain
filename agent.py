@@ -5,7 +5,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.mongodb import AsyncMongoDBSaver
 from pymongo import AsyncMongoClient
 from langgraph.prebuilt import create_react_agent
-from tools import web_search, visit_web_page, wiki_search, academic_search, calculator, get_weather, get_now_playing_movies, text_analysis, multimodal_analysis, youtube_analysis
+from tools import web_search, visit_web_page, wiki_search, academic_search, calculator, get_weather, get_now_playing_movies, text_analysis, multimodal_analysis, youtube_analysis, sql_file_analysis
 from typing import AsyncGenerator
 from logger_config import logger
 import shutil
@@ -48,7 +48,7 @@ class ReActAgent:
             raise ValueError("Missing Google API Key")
         self.config = {"configurable": {"user_id": user_id, "thread_id": thread_id}}
         self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
-        self.tools = [web_search, visit_web_page, wiki_search, academic_search, calculator, get_weather, get_now_playing_movies, text_analysis, multimodal_analysis, youtube_analysis]
+        self.tools = [web_search, visit_web_page, wiki_search, academic_search, calculator, get_weather, get_now_playing_movies, text_analysis, multimodal_analysis, youtube_analysis, sql_file_analysis]
         self.checkpointer = None
         self.agent = None
     

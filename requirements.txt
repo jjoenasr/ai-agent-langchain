@@ -16,6 +16,7 @@ dataclasses-json==0.6.7
 datasets==2.18.0
 dill==0.3.8
 dnspython==2.7.0
+duckdb
 duckduckgo_search==2025.4.4
 et_xmlfile==2.0.0
 faiss-cpu==1.10.0
