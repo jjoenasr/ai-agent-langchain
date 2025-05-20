@@ -9,7 +9,7 @@ from tools import web_search, visit_web_page, wiki_search, academic_search, calc
 from typing import AsyncGenerator
 from logger_config import logger
 import shutil
-from models import MultimodalMessage, FileData
+from schemas import MultimodalMessage, FileData
 from pathlib import Path
 import gradio as gr
 
