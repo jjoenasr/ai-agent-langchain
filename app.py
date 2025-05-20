@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from agent import ReActAgent
 import gradio as gr
 from logger_config import logger
+from uuid import uuid4
 import asyncio
 
 load_dotenv()
@@ -10,15 +11,22 @@ load_dotenv()
 async def main():
     print("\n" + "-"*30 + " App Starting " + "-"*30)
     # Initialize agent and tools
-    agent = ReActAgent(thread_id='my-langchain-agent')
+    agent = ReActAgent()
     await agent.initialize_agent()
-    hist = await agent.load_prev_messages()
     print("-"*(60 + len(" App Starting ")) + "\n")
 
     # Gradio UI    
     with gr.Blocks() as demo:
         gr.Markdown("# Chat with your agent and see its thoughts")
-        chatbot = gr.Chatbot(hist,
+        # State variables per user/session
+        thread_id = gr.State(uuid4().hex)
+        hist = gr.State([])
+        logger.info(f"New session started, thread_id: {thread_id.value}")
+        # Load previous messages
+        demo.load(agent.load_prev_messages, [thread_id], [hist])
+    
+
+        chatbot = gr.Chatbot(value=hist.value,
                             label="AI Assistant",
                             type="messages",
                             placeholder="What can i help you with?",
@@ -29,7 +37,7 @@ async def main():
                                    submit_btn=True)
     
         clear = gr.ClearButton([msg, chatbot])
-        msg.submit(agent.stream_answer, [msg, chatbot], [msg, chatbot])
+        msg.submit(agent.stream_answer, [thread_id, msg, chatbot], [msg, chatbot])
     logger.info("Launching Gradio Interface for Basic Agent Evaluation...")
     demo.launch()
 

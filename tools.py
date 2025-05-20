@@ -35,7 +35,6 @@ def visit_web_page(url: str, query: str, section_position: Optional[Literal["sta
             return manager.retrieve_html_section(html , section_position)
 
         # Ingest documents into vector store
-
         manager.ingest_documents_from_html(html)
         # Retrieve most similar documents
         return manager.retrieve_documents(query)
@@ -50,7 +49,7 @@ def web_search(query: str) -> str:
     try:
         results = DDGS().text(query, max_results=8)
         if len(results) == 0:
-            raise Exception("No results found! Try a less restrictive/shorter query.")
+            raise ValueError("No results found! Try a less restrictive/shorter query.")
         postprocessed_results = [f"[{result['title']}]({result['href']})\n{result['body']}" for result in results]
         return "## Search Results\n\n" + "\n\n".join(postprocessed_results)
     except Exception as e:
@@ -225,17 +224,17 @@ def multimodal_analysis(filepath: str, prompt: str) -> str:
     Send a prompt and a file (image, audio or video) to LLM for multimodal analysis
     Supported file types to analyze: .png, .jpg, .mp3
     """
-    ext = os.path.splitext(filepath)[1].lower()
-    if ext == ".png":
-        mime_type = "image/png"
-    elif ext == ".jpg":
-        mime_type = "image/jpeg"
-    elif ext == ".mp3":
-        mime_type = "audio/mp3"
-    else:
-        return f"Unsupported file type: {ext}"
-
     try:
+        ext = os.path.splitext(filepath)[1].lower()
+        if ext == ".png":
+            mime_type = "image/png"
+        elif ext == ".jpg":
+            mime_type = "image/jpeg"
+        elif ext == ".mp3":
+            mime_type = "audio/mp3"
+        else:
+            raise ValueError(f"Unsupported file type: {ext}")
+
         with open(filepath, "rb") as f:
             file_bytes = f.read()
         

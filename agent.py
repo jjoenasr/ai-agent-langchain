@@ -41,12 +41,11 @@ def pre_model_hook(state):
     return {"llm_input_messages": trimmed_messages}
 
 class ReActAgent:
-    def __init__(self, user_id: str ="user-xxx", thread_id: str = "my-langchain-agent"):
+    def __init__(self):
         logger.info("AI Agent initialized.")
         if not os.getenv('GOOGLE_API_KEY'):
             logger.error("Missing Google API Key")
             raise ValueError("Missing Google API Key")
-        self.config = {"configurable": {"user_id": user_id, "thread_id": thread_id}}
         self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
         self.tools = [web_search, visit_web_page, wiki_search, academic_search, calculator, get_weather, get_now_playing_movies, text_analysis, multimodal_analysis, youtube_analysis, sql_file_analysis]
         self.checkpointer = None
@@ -56,11 +55,12 @@ class ReActAgent:
         self.checkpointer = MemorySaver() # await setup_persistence()
         self.agent = create_react_agent(self.llm, self.tools, checkpointer=self.checkpointer, pre_model_hook=pre_model_hook)
     
-    async def load_prev_messages(self) -> list:
+    async def load_prev_messages(self, thread_id: str) -> list:
         """Load agent messages in gradio format"""
+        config = {"configurable": {"user_id": "user-xxx", "thread_id": thread_id}}
         hist = []
         try:
-            state = await self.agent.aget_state(self.config)
+            state = await self.agent.aget_state(config)
             msgs = state.values.get('messages', [])
             for msg in msgs:
                 if isinstance(msg, HumanMessage):
@@ -100,7 +100,7 @@ class ReActAgent:
         
         return file_path
 
-    async def stream_answer(self, msg_dict: dict, hist: list) -> AsyncGenerator[tuple[dict, list],  None]:
+    async def stream_answer(self, thread_id: str, msg_dict: dict, hist: list) -> AsyncGenerator[tuple[dict, list],  None]:
         try:
             msg = MultimodalMessage(**msg_dict)
             query, files = msg.text, msg.files
@@ -119,7 +119,8 @@ class ReActAgent:
                             query += f"\nThe file is attached and available at filepath: {file_path}"
                 yield MultimodalMessage().model_dump(),  hist
                 buffer = ""
-                async for chunk, _ in self.agent.astream({"messages": [HumanMessage(content=query)]}, config=self.config, stream_mode="messages"):
+                config = {"configurable": {"user_id": "user-xxx", "thread_id": thread_id}}
+                async for chunk, _ in self.agent.astream({"messages": [HumanMessage(content=query)]}, config=config, stream_mode="messages"):
                     if isinstance(chunk, AIMessageChunk):
                         if chunk.tool_calls:
                             for tool_call in chunk.tool_calls:
