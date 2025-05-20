@@ -17,15 +17,20 @@ async def main():
 
     # Gradio UI    
     with gr.Blocks() as demo:
-        gr.Markdown("# Chat with your agent and see its thoughts")
         # State variables per user/session
-        thread_id = gr.State(uuid4().hex)
+        thread_id = gr.State("")
         hist = gr.State([])
         
-        # Load previous messages on session start
-        demo.load(agent.load_prev_messages, [thread_id], [hist])
-    
+        # Load previous messages
+        async def load_session() -> tuple[str, list]:
+            thread_id = uuid4().hex
+            hist = await agent.load_prev_messages(thread_id)
+            return thread_id, hist
 
+        demo.load(load_session, outputs=[thread_id, hist])
+
+        gr.Markdown("# Chat with your agent and see its thoughts")
+    
         chatbot = gr.Chatbot(value=hist.value,
                             label="AI Assistant",
                             type="messages",
