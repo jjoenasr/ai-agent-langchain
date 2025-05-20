@@ -21,8 +21,8 @@ async def main():
         # State variables per user/session
         thread_id = gr.State(uuid4().hex)
         hist = gr.State([])
-        logger.info(f"New session started, thread_id: {thread_id.value}")
-        # Load previous messages
+        
+        # Load previous messages on session start
         demo.load(agent.load_prev_messages, [thread_id], [hist])
     
 

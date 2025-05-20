@@ -58,6 +58,7 @@ class ReActAgent:
     async def load_prev_messages(self, thread_id: str) -> list:
         """Load agent messages in gradio format"""
         config = {"configurable": {"user_id": "user-xxx", "thread_id": thread_id}}
+        logger.info(f"New session started, thread_id: {thread_id}")
         hist = []
         try:
             state = await self.agent.aget_state(config)
