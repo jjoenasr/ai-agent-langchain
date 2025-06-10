@@ -47,7 +47,19 @@ class ReActAgent:
             logger.error("Missing Google API Key")
             raise ValueError("Missing Google API Key")
         self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
-        self.tools = [web_search, visit_web_page, wiki_search, academic_search, calculator, get_weather, get_now_playing_movies, text_analysis, multimodal_analysis, youtube_analysis, sql_file_analysis]
+        self.tools = [
+            web_search,
+            visit_web_page,
+            wiki_search,
+            academic_search,
+            calculator,
+            get_weather,
+            get_now_playing_movies,
+            text_analysis,
+            multimodal_analysis,
+            youtube_analysis,
+            sql_file_analysis
+        ]
         self.checkpointer = None
         self.agent = None
     
@@ -102,6 +114,7 @@ class ReActAgent:
         return file_path
 
     async def stream_answer(self, thread_id: str, msg_dict: dict, hist: list) -> AsyncGenerator[tuple[dict, list],  None]:
+        """Stream the answer from the agent and update the chat history"""
         try:
             msg = MultimodalMessage(**msg_dict)
             query, files = msg.text, msg.files
@@ -116,7 +129,6 @@ class ReActAgent:
                         hist.append(gr.ChatMessage(role="user", content=gr.File(file)))
                         file_path = self.download_file(file)
                         if file_path:
-                            logger.info(f"Downloaded user file at: {file_path}")
                             query += f"\nThe file is attached and available at filepath: {file_path}"
                 yield MultimodalMessage().model_dump(),  hist
                 buffer = ""
@@ -147,6 +159,7 @@ class ReActAgent:
             return
     
     async def answer(self, question: str) -> str:
+        """Answer a question directly using the agent"""
         if not question.strip():
             return "You can't send an empty message"
         logger.info(f"Agent received question (first 50 chars): {question[:50]}...")

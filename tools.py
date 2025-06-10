@@ -41,7 +41,7 @@ def visit_web_page(url: str, query: str, section_position: Optional[Literal["sta
     
     except Exception as e:
         logger.error(f"Web Visiting tool error: {str(e)}")
-        return "Could not access the website"
+        return f"Could not access the website. Error: {str(e)[:100]}..."
 
 @tool
 def web_search(query: str) -> str:
@@ -54,7 +54,7 @@ def web_search(query: str) -> str:
         return "## Search Results\n\n" + "\n\n".join(postprocessed_results)
     except Exception as e:
         logger.error(f"Web search tool error: {e}")
-        return f"Error searching the web: {str(e)}"
+        return f"Error searching the web: {str(e)[:100]}..."
     
 @tool
 def academic_search(query: str) -> str:
@@ -64,7 +64,7 @@ def academic_search(query: str) -> str:
         return search.invoke(query)
     except Exception as e:
         logger.error(f"Academic search tool error: {e}")
-        return f"Error searching the web: {str(e)}"
+        return f"Error searching the web: {str(e)[:100]}..."
 
 @tool
 def get_weather(location: Annotated[str, "City Name"]) -> str:
@@ -80,7 +80,7 @@ def get_weather(location: Annotated[str, "City Name"]) -> str:
         return f"The weather in {location} is currently {main_weather} with a temperature of {temperature:.2f}°C."
     except Exception as e:
         logger.error(f"Weather tool error: {e}")
-        return f"Sorry, I couldn't get the weather information at the moment. Error: {e}"
+        return f"Sorry, I couldn't get the weather information at the moment. Error: {str(e)[:100]}..."
 
 
 @tool
@@ -108,7 +108,7 @@ def get_now_playing_movies() -> str:
         return json.dumps(movie_list, indent=2)
     except Exception as e:
         logger.error(f"Movie tool error: {e}")
-        return f"Couldnt find the movies. Error: {e}"
+        return f"Couldnt find the movies. Error: {str(e)[:100]}..."
 
 @tool
 def wiki_search(query: str) -> str:
@@ -188,7 +188,7 @@ def text_analysis(filepath: str) -> str:
 
     except Exception as e:
         logger.error(f"Text Analysis tool error: {e}")
-        return f"Error reading file {filepath}: {str(e)}" 
+        return f"Error reading file {filepath}: {str(e)[:100]}..." 
 
 @tool
 def sql_file_analysis(filepath: str, query: Annotated[str, "SQL query"]) -> str:
@@ -216,7 +216,7 @@ def sql_file_analysis(filepath: str, query: Annotated[str, "SQL query"]) -> str:
         
     except Exception as e:
         logger.error(f"SQL Analysis tool error: {e}")
-        return f"Error running SQL query on file {filepath}: {str(e)}"   
+        return f"Error running SQL query on file {filepath}: {str(e)[:100]}..."   
 
 @tool
 def multimodal_analysis(filepath: str, prompt: str) -> str:
@@ -251,7 +251,7 @@ def multimodal_analysis(filepath: str, prompt: str) -> str:
         return response.text
     except Exception as e:
         logger.error(f"Error reading file {filepath}: {str(e)}")
-        return f"Error reading file {filepath}: {str(e)}"
+        return f"Error reading file {filepath}: {str(e)[:100]}..."
 
 @tool
 def youtube_analysis(url: Annotated[str, "Youtube URL"], prompt: str) -> str:
@@ -273,5 +273,5 @@ def youtube_analysis(url: Annotated[str, "Youtube URL"], prompt: str) -> str:
         return response.text
     except Exception as e:
         logger.error(f"Error reading ytb video: {str(e)}")
-        return f"Error reading ytb video: {str(e)}"
+        return f"Error reading ytb video: {str(e)[:100]}..."
 
