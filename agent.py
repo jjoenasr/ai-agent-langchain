@@ -3,10 +3,11 @@ from langchain_core.messages import HumanMessage, AIMessage, AIMessageChunk, tri
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.mongodb import AsyncMongoDBSaver
+from langgraph.graph.state import CompiledStateGraph
 from pymongo import AsyncMongoClient
 from langgraph.prebuilt import create_react_agent
 from tools import web_search, visit_web_page, wiki_search, academic_search, calculator, get_weather, get_now_playing_movies, text_analysis, multimodal_analysis, youtube_analysis, sql_file_analysis
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from logger_config import logger
 import shutil
 from schemas import MultimodalMessage, FileData
@@ -29,7 +30,7 @@ async def setup_persistence():
         checkpointer = MemorySaver()
     return checkpointer
 
-# Method to keep the last 5 messages and remove the oldest ones
+# Method to keep the last 5 messages as llm input
 def pre_model_hook(state):
     trimmed_messages = trim_messages(state["messages"],
                                     token_counter=len,
@@ -40,14 +41,17 @@ def pre_model_hook(state):
                                     include_system=True)
     return {"llm_input_messages": trimmed_messages}
 
-class ReActAgent:
-    def __init__(self):
-        logger.info("AI Agent initialized.")
+class AIAgent:
+    def __init__(self, agent: Optional[CompiledStateGraph] = None):
+        self.agent = agent
+    
+    @classmethod
+    async def create(cls):
         if not os.getenv('GOOGLE_API_KEY'):
             logger.error("Missing Google API Key")
             raise ValueError("Missing Google API Key")
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
-        self.tools = [
+        llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
+        tools = [
             web_search,
             visit_web_page,
             wiki_search,
@@ -60,12 +64,10 @@ class ReActAgent:
             youtube_analysis,
             sql_file_analysis
         ]
-        self.checkpointer = None
-        self.agent = None
-    
-    async def initialize_agent(self):
-        self.checkpointer = MemorySaver() # await setup_persistence()
-        self.agent = create_react_agent(self.llm, self.tools, checkpointer=self.checkpointer, pre_model_hook=pre_model_hook)
+        checkpointer = await setup_persistence()
+        agent = create_react_agent(llm, tools, checkpointer=checkpointer, pre_model_hook=pre_model_hook)
+        logger.info("AI Agent initialized.")
+        return cls(agent)
     
     async def load_prev_messages(self, thread_id: str) -> list:
         """Load agent messages in gradio format"""
@@ -158,11 +160,16 @@ class ReActAgent:
             yield MultimodalMessage().model_dump(), hist + [gr.ChatMessage(role="assistant", content="Internal error. Try again later ")]
             return
     
-    async def answer(self, question: str) -> str:
+    async def answer(self, question: str, thread_id: str = "my-thread") -> str:
         """Answer a question directly using the agent"""
         if not question.strip():
             return "You can't send an empty message"
-        logger.info(f"Agent received question (first 50 chars): {question[:50]}...")
-        llm_output: AIMessage = self.agent.invoke({"messages": [HumanMessage(content=question)]}, config=self.config)['messages'][-1]
-        logger.info(f"Agent answers: {llm_output.content}")
-        return llm_output
+        try:
+            logger.info(f"Agent received question (first 50 chars): {question[:50]}...")
+            config = {"configurable": {"user_id": "user-xxx", "thread_id": thread_id}}
+            llm_output: AIMessage = await self.agent.ainvoke({"messages": [HumanMessage(content=question)]}, config=config)['messages'][-1]
+            logger.info(f"Agent answers: {llm_output.content}")
+            return llm_output
+        except Exception as e:
+            logger.error(f"Error in chat function: {e}")
+            return "Internal error. Try again later "

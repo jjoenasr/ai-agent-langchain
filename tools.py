@@ -15,7 +15,7 @@ import os
 import json
 
 # RAG Manager
-manager = RAGManager()
+rag_manager = RAGManager()
 # Gemini multimodal client
 gemini_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
@@ -32,12 +32,12 @@ def visit_web_page(url: str, query: str, section_position: Optional[Literal["sta
 
         # Optional: Section bias toward start, middle, or end
         if section_position:
-            return manager.retrieve_html_section(html , section_position)
+            return rag_manager.retrieve_html_section(html , section_position)
 
         # Ingest documents into vector store
-        manager.ingest_documents_from_html(html)
+        rag_manager.ingest_documents_from_html(html)
         # Retrieve most similar documents
-        return manager.retrieve_documents(query)
+        return rag_manager.retrieve_documents(query)
     
     except Exception as e:
         logger.error(f"Web Visiting tool error: {str(e)}")

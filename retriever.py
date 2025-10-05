@@ -17,9 +17,9 @@ class RAGManager:
         self.embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
         self.vector_store = None
         self.vector_store_path = FAISS_PATH
-        self.load_vector_store()
+        self._load_vector_store()
 
-    def load_vector_store(self):
+    def _load_vector_store(self):
         """Loads the vector store from disk if it exists, otherwise creates a new one."""
         if os.path.exists(self.vector_store_path):
             try:
@@ -60,7 +60,7 @@ class RAGManager:
             return "No content could be parsed from the webpage."
 
         # Reset vector store
-        self.vector_store.delete()
+        self.clear_vector_store()
         # Ingest documents into vector store
         self.vector_store.add_documents(docs)
 

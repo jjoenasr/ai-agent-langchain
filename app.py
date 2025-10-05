@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from agent import ReActAgent
+from agent import AIAgent
 import gradio as gr
 from logger_config import logger
 from uuid import uuid4
@@ -11,8 +11,7 @@ load_dotenv()
 async def main():
     print("\n" + "-"*30 + " App Starting " + "-"*30)
     # Initialize agent and tools
-    agent = ReActAgent()
-    await agent.initialize_agent()
+    agent = await AIAgent.create()
     print("-"*(60 + len(" App Starting ")) + "\n")
 
     # Gradio UI    

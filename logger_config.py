@@ -1,5 +1,8 @@
 import logging
 import sys
+import os
+
+os.makedirs("logs", exist_ok=True)
 
 # Set up the logger
 logger = logging.getLogger('__app__')
@@ -9,7 +12,7 @@ logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
 # File handler for logging to a file
-file_handler = logging.FileHandler(filename='agent.log', encoding='utf-8', mode='a')
+file_handler = logging.FileHandler(filename='logs/agent.log', encoding='utf-8', mode='a')
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
