@@ -1,9 +1,9 @@
-from langchain_core.tools import tool
+from langchain.tools import tool
 from duckduckgo_search import DDGS
 from typing import Annotated, Literal, Optional
 from langchain_community.tools import ArxivQueryRun
-from logger_config import logger
-from retriever import RAGManager
+from app.core.logger_config import logger
+from app.agents.retriever import RAGManager
 import wikipedia
 import requests
 import duckdb
@@ -11,13 +11,22 @@ from google import genai
 from google.genai import types
 from typing import Annotated
 import pandas as pd
+from functools import lru_cache
 import os
 import json
 
 # RAG Manager
-rag_manager = RAGManager()
+@lru_cache
+def get_rag_manager():
+    return RAGManager()
+
 # Gemini multimodal client
-gemini_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+@lru_cache
+def get_gemini_multimodal_client():
+    if os.getenv("GOOGLE_API_KEY"):
+        return genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+    else:
+        return genai.Client()
 
 @tool
 def visit_web_page(url: str, query: str, section_position: Optional[Literal["start", "middle", "end"]] = None) -> str:
@@ -26,6 +35,7 @@ def visit_web_page(url: str, query: str, section_position: Optional[Literal["sta
     A section_position relative to the document (start, middle, end) can be added if needed.
     """
     try:
+        rag_manager = get_rag_manager()
         response = requests.get(url, timeout=20)
         response.raise_for_status()  # Raise an exception for bad status codes
         html = response.text
@@ -238,6 +248,7 @@ def multimodal_analysis(filepath: str, prompt: str) -> str:
         with open(filepath, "rb") as f:
             file_bytes = f.read()
         
+        gemini_client = get_gemini_multimodal_client()
         response = gemini_client.models.generate_content(
             model='models/gemini-2.5-pro-exp-03-25',
             contents=[
@@ -259,6 +270,7 @@ def youtube_analysis(url: Annotated[str, "Youtube URL"], prompt: str) -> str:
     Send a youtube url and a prompt to LLM for multimodal processing
     """
     try:
+        gemini_client = get_gemini_multimodal_client()
         response = gemini_client.models.generate_content(
             model='models/gemini-2.5-pro-exp-03-25',
             contents=types.Content(

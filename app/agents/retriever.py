@@ -1,10 +1,9 @@
-from langchain.docstore.document import Document
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from markdownify import markdownify
 from langchain_text_splitters import MarkdownHeaderTextSplitter
-from logger_config import logger
+from app.core.logger_config import logger
 from typing import Literal
 import faiss
 import re
