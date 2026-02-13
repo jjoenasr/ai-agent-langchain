@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.core.logger_config import logger
 from app.agents.profiles import AgentProfile
 from app.agents.persistence import setup_persistence
-from app.agents.middlewares import trim_messages_before_model
+from app.agents.middlewares import LoggingMiddleware, TrimMessagesMiddleware
 from app.gradio.schemas import MultimodalMessage
 from app.utils import download_file, try_parse
 import gradio as gr
@@ -23,7 +23,7 @@ class AIAgent:
         llm = init_chat_model(f"{settings.llm_provider}:{settings.llm_model}", temperature=settings.llm_temperature)
         tools = profile.tools
         prompt = profile.prompt
-        middlewares = [trim_messages_before_model] + profile.middlewares
+        middlewares = [TrimMessagesMiddleware(), LoggingMiddleware()] + profile.middlewares
         checkpointer_type, checkpointer = await setup_persistence()
         agent = create_agent(llm, tools, checkpointer=checkpointer, system_prompt=prompt, middleware=middlewares)
         logger.info(f"{profile.name} AI Agent initialized.")
